@@ -419,8 +419,7 @@ export default function App() {
           <>
             <div className="flex gap-3 text-[11px] text-slate-400 justify-between items-center -mb-2">
               <span className="text-slate-400 text-[11px]">날짜 클릭 → 그 날 기준 최적 계획</span>
-              <div className="flex gap-3">
-                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-indigo-100 inline-block" />휴가 기간</span>
+              <div className="flex gap-2">
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-amber-100 inline-block" />연차일</span>
                 <span className="text-red-400">● 공휴일</span>
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-indigo-500 inline-block" />오늘</span>
