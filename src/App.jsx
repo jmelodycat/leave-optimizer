@@ -472,9 +472,9 @@ export default function App() {
           <p className="text-[11px] text-slate-300">
             공휴일 정보: 한국천문연구원 (data.go.kr)
           </p>
-          <a href="https://instagram.com/no.problem_club" target="_blank" rel="noopener"
+          <a href="https://instagram.com/no_problem.club" target="_blank" rel="noopener"
             className="inline-block text-xs text-slate-400 no-underline">
-            made by <span className="text-indigo-500 font-semibold">@no.problem_club</span>
+            made by <span className="text-indigo-500 font-semibold">@no_problem.club</span>
           </a>
         </div>
       </div>
