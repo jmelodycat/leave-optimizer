@@ -362,7 +362,7 @@ export default function App() {
         <div className="bg-white rounded-2xl px-5 py-4 shadow-sm border border-slate-100">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <p className="font-bold text-slate-800">이번에 쓸 휴가</p>
+              <p className="font-bold text-slate-800">이번에 쓸 휴가 일수</p>
               <p className="text-xs text-slate-400 mt-0.5">슬라이더 조정 또는 달력 날짜 클릭</p>
             </div>
             <div className="flex items-center gap-1.5">
