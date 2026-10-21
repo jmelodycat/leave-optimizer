@@ -126,7 +126,7 @@ function MonthCalendar({ year, month, holidays, highlightStart, highlightEnd, le
               {/* 연차 표시 */}
               {!isPast && isLeave && (
                 <p className="text-[10px] text-amber-500 font-bold mt-0.5">
-                  {holiday ? '★연차' : '연차'}
+                  {holiday ? '★휴가' : '휴가'}
                 </p>
               )}
             </div>
@@ -165,14 +165,14 @@ function ClickedPanel({ clickedDate, window: win, onClear }) {
         {win.leaveDates.length > 0 ? (
           <div className="bg-amber-50 rounded-xl px-3 py-2.5">
             <p className="text-xs font-semibold text-amber-700 mb-1">
-              연차 {win.leaveUsed}일 사용
+              휴가 {win.leaveUsed}일 사용
             </p>
             <p className="text-xs text-amber-600 leading-relaxed">
               {win.leaveDates.map(d => formatDateKo(d)).join('\n')}
             </p>
           </div>
         ) : (
-          <p className="text-xs text-slate-400">연차 없이도 가능한 기간이에요</p>
+          <p className="text-xs text-slate-400">휴가 없이도 가능한 기간이에요</p>
         )}
       </div>
     </div>
@@ -225,10 +225,10 @@ function AutoPanel({ opps, allDates, offDays, maxLeave, selectedOppIdx, onSelect
                   <div className="flex items-center gap-3">
                     <div className="w-[4.5rem] shrink-0 text-center">
                       {step.leaveCount === 0
-                        ? <span className="text-xs text-slate-400">연차 없이</span>
+                        ? <span className="text-xs text-slate-400">휴가 없이</span>
                         : <span className={`inline-block text-xs font-bold px-2.5 py-1 rounded-full
                             ${active ? 'bg-amber-400 text-white' : 'bg-amber-100 text-amber-700'}`}>
-                            연차 {step.leaveCount}일
+                            휴가 {step.leaveCount}일
                           </span>
                       }
                     </div>
@@ -241,7 +241,7 @@ function AutoPanel({ opps, allDates, offDays, maxLeave, selectedOppIdx, onSelect
                       </div>
                       {step.leaveDates.length > 0 && (
                         <p className="text-xs text-amber-600 mt-1">
-                          {step.leaveDates.map(d => formatDateKo(d)).join(', ')} 연차
+                          {step.leaveDates.map(d => formatDateKo(d)).join(', ')} 휴가
                         </p>
                       )}
                     </div>
@@ -362,7 +362,7 @@ export default function App() {
         <div className="bg-white rounded-2xl px-5 py-4 shadow-sm border border-slate-100">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <p className="font-bold text-slate-800">이번 휴가에 쓸 연차</p>
+              <p className="font-bold text-slate-800">이번에 쓸 휴가</p>
               <p className="text-xs text-slate-400 mt-0.5">슬라이더 조정 또는 달력 날짜 클릭</p>
             </div>
             <div className="flex items-center gap-1.5">
@@ -420,7 +420,7 @@ export default function App() {
             <div className="flex gap-3 text-[11px] text-slate-400 justify-between items-center -mb-2">
               <span className="text-slate-400 text-[11px]">날짜 클릭 → 그 날 기준 최적 계획</span>
               <div className="flex gap-2">
-                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-amber-100 inline-block" />연차일</span>
+                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-amber-100 inline-block" />휴가일</span>
                 <span className="text-red-400">● 공휴일</span>
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-indigo-500 inline-block" />오늘</span>
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />선택일</span>
@@ -444,7 +444,7 @@ export default function App() {
         {!loading && (
           <div>
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
-              {currentMonth + 1}월 연차 계획
+              {currentMonth + 1}월 휴가 계획
             </p>
 
             {clickedDate ? (
