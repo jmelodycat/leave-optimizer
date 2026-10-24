@@ -28,9 +28,18 @@ export default async function handler(req, res) {
     // 달 하나가 실패해도 나머지 달은 쓴다. 빠진 달은 화면 쪽 내장 데이터가 메운다.
     const settled = await Promise.allSettled(monthRequests)
     const monthResults = settled.filter(r => r.status === 'fulfilled').map(r => r.value)
-    const failedMonths = settled.length - monthResults.length
+    // 공공데이터포털은 키 오류나 호출 한도 초과도 200 응답의 JSON으로 돌려준다. 정상 응답은 header.resultCode가 '00'이다.
+    const upstreamErrors = new Set()
+    const validResults = monthResults.filter(m => {
+      const authErr = m?.OpenAPI_ServiceResponse?.cmmMsgHeader
+      if (authErr) { upstreamErrors.add(`${authErr.errMsg} (${authErr.returnReasonCode})`); return false }
+      const header = m?.response?.header
+      if (header && header.resultCode !== '00') { upstreamErrors.add(`${header.resultMsg} (${header.resultCode})`); return false }
+      return true
+    })
+    const failedMonths = settled.length - validResults.length
 
-    const holidays = monthResults.flatMap(m => {
+    const holidays = validResults.flatMap(m => {
       const items = m?.response?.body?.items?.item
       if (!items) return []
       return (Array.isArray(items) ? items : [items])
@@ -44,7 +53,7 @@ export default async function handler(req, res) {
 
     // 일부 달이 실패했으면 오래 캐시하지 않는다
     res.setHeader('Cache-Control', failedMonths ? 's-maxage=300' : 's-maxage=86400')
-    res.json({ holidays, failedMonths })
+    res.json({ holidays, failedMonths, upstreamErrors: [...upstreamErrors] })
   } catch (err) {
     res.status(500).json({ error: err.message, holidays: [] })
   }
