@@ -25,7 +25,10 @@ export default async function handler(req, res) {
       return fetch(url.toString()).then(r => r.json())
     })
 
-    const monthResults = await Promise.all(monthRequests)
+    // 달 하나가 실패해도 나머지 달은 쓴다. 빠진 달은 화면 쪽 내장 데이터가 메운다.
+    const settled = await Promise.allSettled(monthRequests)
+    const monthResults = settled.filter(r => r.status === 'fulfilled').map(r => r.value)
+    const failedMonths = settled.length - monthResults.length
 
     const holidays = monthResults.flatMap(m => {
       const items = m?.response?.body?.items?.item
@@ -39,8 +42,9 @@ export default async function handler(req, res) {
         })
     })
 
-    res.setHeader('Cache-Control', 's-maxage=86400') // 하루 캐시
-    res.json({ holidays })
+    // 일부 달이 실패했으면 오래 캐시하지 않는다
+    res.setHeader('Cache-Control', failedMonths ? 's-maxage=300' : 's-maxage=86400')
+    res.json({ holidays, failedMonths })
   } catch (err) {
     res.status(500).json({ error: err.message, holidays: [] })
   }

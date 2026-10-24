@@ -206,15 +206,19 @@ export const HOLIDAY_DATA = {
   ],
 }
 
-// API에서 공휴일 가져오기 (Vercel 배포 후 사용)
+// 내장 데이터를 기본으로 깔고 공공데이터 API 결과를 합친다.
+// API는 먼 연도가 비어 있거나 임시공휴일 반영이 늦을 수 있어서, 비거나 실패해도 내장 데이터가 구멍을 메운다.
+// 같은 날짜는 API 쪽 이름을 쓴다.
 export async function fetchHolidays(year) {
+  const merged = new Map((HOLIDAY_DATA[year] ?? []).map(h => [h.date, h]))
   try {
     const res = await fetch(`/api/holidays?year=${year}`)
-    if (!res.ok) throw new Error('API 응답 오류')
-    const data = await res.json()
-    if (data.holidays?.length > 0) return data.holidays
+    if (res.ok) {
+      const data = await res.json()
+      for (const h of data.holidays ?? []) merged.set(h.date, h)
+    }
   } catch {
-    // API 없으면 로컬 데이터 사용
+    // API가 없거나 실패하면 내장 데이터만 쓴다
   }
-  return HOLIDAY_DATA[year] ?? []
+  return [...merged.values()].sort((a, b) => a.date.localeCompare(b.date))
 }

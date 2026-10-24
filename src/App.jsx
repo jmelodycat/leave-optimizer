@@ -8,7 +8,6 @@ import {
   buildOffDaySet,
   formatDateKo,
   formatRangeKo,
-  isWeekend,
 } from './utils/optimizer'
 
 const NOW = new Date()
@@ -17,6 +16,8 @@ const CURRENT_MONTH = NOW.getMonth()
 const YEARS = [CURRENT_YEAR, CURRENT_YEAR + 1, CURRENT_YEAR + 2]
 const MAX_YEAR = CURRENT_YEAR + 2
 const MAX_MONTH = CURRENT_MONTH  // 3년 후 같은 달까지
+
+const TODAY_STR = makeDateStr(NOW.getFullYear(), NOW.getMonth(), NOW.getDate())
 
 const DOW = ['일', '월', '화', '수', '목', '금', '토']
 
@@ -98,7 +99,14 @@ function MonthCalendar({ year, month, holidays, highlightStart, highlightEnd, le
           return (
             <div
               key={i}
+              role={isPast ? undefined : 'button'}
+              tabIndex={isPast ? undefined : 0}
+              aria-label={isPast ? undefined : `${month + 1}월 ${day}일${holiday ? ' ' + holiday.name : ''}`}
+              aria-pressed={isPast ? undefined : isClicked}
               onClick={() => !isPast && onDateClick(ds)}
+              onKeyDown={e => {
+                if (!isPast && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onDateClick(ds) }
+              }}
               className={`min-h-[70px] border-b border-r border-slate-100 p-1.5 transition-all
                 ${isPast ? 'bg-slate-50/60 cursor-default' : 'cursor-pointer'}
                 ${!isPast && bg}
@@ -167,7 +175,7 @@ function ClickedPanel({ clickedDate, window: win, onClear }) {
             <p className="text-xs font-semibold text-amber-700 mb-1">
               휴가 {win.leaveUsed}일 사용
             </p>
-            <p className="text-xs text-amber-600 leading-relaxed">
+            <p className="text-xs text-amber-600 leading-relaxed whitespace-pre-line">
               {win.leaveDates.map(d => formatDateKo(d)).join('\n')}
             </p>
           </div>
@@ -272,8 +280,15 @@ export default function App() {
   const [clickedDate, setClickedDate] = useState(null)
 
   useEffect(() => {
+    // 연말연시처럼 해를 넘는 연휴를 계산하려고 앞뒤 연도까지 불러온다
+    let cancelled = false
     setLoading(true)
-    fetchHolidays(year).then(data => { setHolidays(data); setLoading(false) })
+    Promise.all([year - 1, year, year + 1].map(fetchHolidays)).then(lists => {
+      if (cancelled) return
+      setHolidays(lists.flat())
+      setLoading(false)
+    })
+    return () => { cancelled = true }
   }, [year])
 
   // 달/연도 이동 시 초기화
@@ -288,21 +303,22 @@ export default function App() {
     setSelectedStepIdx(null)
   }, [leaveCount])
 
-  const { allDates, offDays } = useMemo(() => ({
-    allDates: getAllDates(year),
-    offDays: buildOffDaySet(year, holidays),
-  }), [year, holidays])
+  // 계산 범위: 보는 해의 앞뒤 두 달씩 더. 오늘 이전은 뺀다(이미 지나간 날에는 휴가를 배정하지 않는다)
+  const { allDates, offDays } = useMemo(() => {
+    const from = `${year - 1}-11-01`
+    const dates = getAllDates(from > TODAY_STR ? from : TODAY_STR, `${year + 1}-02-28`)
+    return { allDates: dates, offDays: buildOffDaySet(dates, holidays) }
+  }, [year, holidays])
 
   const allOpps = useMemo(
-    () => findOpportunities(year, holidays, leaveCount),
-    [year, holidays, leaveCount]
+    () => findOpportunities(allDates, offDays, holidays, leaveCount),
+    [allDates, offDays, holidays, leaveCount]
   )
 
-  const monthOpps = useMemo(() => allOpps.filter(opp => {
-    const sm = parseInt(opp.startDate.slice(5, 7)) - 1
-    const em = parseInt(opp.endDate.slice(5, 7)) - 1
-    return currentMonth >= sm && currentMonth <= em
-  }), [allOpps, currentMonth])
+  const monthOpps = useMemo(() => {
+    const ym = `${year}-${String(currentMonth + 1).padStart(2, '0')}`
+    return allOpps.filter(opp => opp.startDate.slice(0, 7) <= ym && ym <= opp.endDate.slice(0, 7))
+  }, [allOpps, year, currentMonth])
 
   const selectedOppIdx = useMemo(() => {
     if (monthOpps.length === 0) return null
@@ -374,10 +390,10 @@ export default function App() {
               <span className="text-slate-500 text-sm">일</span>
             </div>
           </div>
-          <input type="range" min={1} max={25} value={leaveCount}
+          <input type="range" min={1} max={25} value={leaveCount} aria-label="이번에 쓸 휴가 일수"
             onChange={e => setLeaveCount(Number(e.target.value))}
             className="w-full accent-indigo-500" />
-          <div className="flex justify-between text-xs text-slate-300 mt-1"><span>1일</span><span>25일</span></div>
+          <div className="flex justify-between text-xs text-slate-400 mt-1"><span>1일</span><span>25일</span></div>
         </div>
 
         {/* ② 연도 + 월 선택 */}
@@ -421,7 +437,7 @@ export default function App() {
               <span className="text-slate-400 text-[11px]">날짜 클릭 → 그 날 기준 최적 계획</span>
               <div className="flex gap-2">
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-amber-100 inline-block" />휴가일</span>
-                <span className="text-red-400">● 공휴일</span>
+                <span className="text-red-400">● 공휴일(*대체)</span>
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-indigo-500 inline-block" />오늘</span>
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />선택일</span>
               </div>
@@ -469,7 +485,7 @@ export default function App() {
         )}
 
         <div className="text-center space-y-1 pt-1">
-          <p className="text-[11px] text-slate-300">
+          <p className="text-[11px] text-slate-400">
             공휴일 정보: 한국천문연구원 (data.go.kr)
           </p>
           <a href="https://instagram.com/no_problem.club" target="_blank" rel="noopener"

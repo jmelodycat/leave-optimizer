@@ -1,7 +1,8 @@
 const DOW = ['일', '월', '화', '수', '목', '금', '토']
 
+// 로컬 날짜 기준 문자열. toISOString은 UTC로 바꿔서 한국 시간대에서는 하루씩 밀린다.
 function toDateStr(d) {
-  return d.toISOString().slice(0, 10)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 function addDays(d, n) {
@@ -15,23 +16,22 @@ export function isWeekend(dateStr) {
   return day === 0 || day === 6
 }
 
-export function getAllDates(year) {
+// startDate~endDate(YYYY-MM-DD, 양 끝 포함)의 날짜 문자열 목록
+export function getAllDates(startDate, endDate) {
   const dates = []
-  let d = new Date(year, 0, 1)
-  while (d.getFullYear() === year) {
+  const end = new Date(endDate + 'T00:00:00')
+  let d = new Date(startDate + 'T00:00:00')
+  while (d <= end) {
     dates.push(toDateStr(d))
     d = addDays(d, 1)
   }
   return dates
 }
 
-export function buildOffDaySet(year, holidays) {
+export function buildOffDaySet(allDates, holidays) {
   const offDays = new Set(holidays.map(h => h.date))
-  let d = new Date(year, 0, 1)
-  while (d.getFullYear() === year) {
-    const s = toDateStr(d)
+  for (const s of allDates) {
     if (isWeekend(s)) offDays.add(s)
-    d = addDays(d, 1)
   }
   return offDays
 }
@@ -175,13 +175,10 @@ export function getBreakdown(cluster, allDates, offDays, maxLeave) {
 }
 
 /**
- * 연도·공휴일·최대연차 기준, 모든 클러스터의 최적 조합 반환
- * filterMonth: null = 전체, 1~12 = 특정 월
+ * 날짜 범위·공휴일·최대연차 기준, 모든 클러스터의 최적 조합 반환
+ * allDates의 첫 날짜 이전과 마지막 날짜 이후로는 확장하지 않는다
  */
-export function findOpportunities(year, holidays, maxLeave, filterMonth = null) {
-  const allDates = getAllDates(year)
-  const offDays = buildOffDaySet(year, holidays)
-
+export function findOpportunities(allDates, offDays, holidays, maxLeave) {
   const runs = findHolidayRuns(allDates, offDays, holidays)
   const clusters = mergeRuns(runs, allDates, offDays)
 
@@ -213,13 +210,6 @@ export function findOpportunities(year, holidays, maxLeave, filterMonth = null) 
     }
 
     if (!best) continue
-
-    // 월 필터
-    if (filterMonth !== null) {
-      const sm = parseInt(best.startDate.slice(5, 7))
-      const em = parseInt(best.endDate.slice(5, 7))
-      if (!(filterMonth >= sm && filterMonth <= em)) continue
-    }
 
     results.push(best)
   }
